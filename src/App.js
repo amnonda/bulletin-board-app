@@ -1,5 +1,5 @@
 import React from 'react';
-import {PoisView} from './components/PoisView';
+import PoisView from './components/PoisView';
 
 import MarkersByUrl from './components/MarkersByUrl';
 

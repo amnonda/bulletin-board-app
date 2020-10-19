@@ -1,5 +1,10 @@
 require('dotenv').config();
+var fs = require('fs');
+var https = require('https');
+var privateKey  = fs.readFileSync('/etc/letsencrypt/live/adsoft.stone-guitar-picks.com/privkey.pem', 'utf8');
+var certificate = fs.readFileSync('/etc/letsencrypt/live/adsoft.stone-guitar-picks.com/fullchain.pem', 'utf8');
 
+var credentials = {key: privateKey, cert: certificate};
 const express = require('express');
 const app = express();
 // serve up production assets
@@ -10,7 +15,11 @@ const path = require('path');
 app.get('*', (req, res) => {
 res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
 });
-// if not in production use the port 4003
-const PORT = process.env.PORT || 4003;
+// if not in production use the port 4005
+const PORT = process.env.PORT || 4005;
 console.log('server started on port:',PORT);
-app.listen(PORT);
+
+var httpsServer = https.createServer(credentials, app);
+httpsServer.listen(PORT);
+
+//app.listen(PORT);

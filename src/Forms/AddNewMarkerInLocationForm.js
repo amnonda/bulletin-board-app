@@ -1,16 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Form } from 'react-bootstrap';
 
-import { EnteredListContext, 
-    AddNewMarkerContext,
-    SetMyFormContext
- } from "../components/PoisView";
- 
-function AddNewMarkerInLocationForm() {
+function AddNewMarkerInLocationForm(props) {
 
-    const entered_list = useContext(EnteredListContext);
-    const addNewMarker = useContext(AddNewMarkerContext);
-    const setMyForm = useContext(SetMyFormContext);
+    const {entered_list, setMyForm, addNewMarker} = props;
 
     function newMarkerInLocationSubmit() {
         if (entered_list.name_entered && entered_list.desc_entered) {

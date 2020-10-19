@@ -1,23 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Form } from 'react-bootstrap';
 
-import { CheckedListContext ,
-    EnteredListContext, 
-    FilterByListContext, 
-    SetRefreshWatchdogContext, 
-    SetMyFormContext, 
-    ResetFiltersAndSelectionsContext
- } from "../components/PoisView";
+function GetFilterValuesForm(props) {
 
-
-function GetFilterValuesForm() {
-
-        const checked_list = useContext(CheckedListContext);
-        const entered_list = useContext(EnteredListContext);
-        const filterBy_list = useContext(FilterByListContext);
-        const setRefreshWatchdog = useContext(SetRefreshWatchdogContext);
-        const setMyForm = useContext(SetMyFormContext);
-        const resetFiltersAndSelections = useContext(ResetFiltersAndSelectionsContext);
+    const {setMyForm, setRefreshWatchdog, resetFiltersAndSelections, 
+        checked_list, entered_list, filterBy_list} = props;
 
     function filterValuesSubmit() {
 
