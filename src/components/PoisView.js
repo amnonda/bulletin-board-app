@@ -91,7 +91,9 @@ function PoisView() {
     const [refreshWatchdog, setRefreshWatchdog] = useState(0);
     const [lastMapLocation, setLastMapLocation] = useState(L.latLng(0,0));
     const [new_position, handleNewPosition] = useState(L.latLng(0,0));
-
+    const [recordMovement, setRecordMovement] = useState(false);
+    // The wake lock sentinel.
+    const [wakeLock, setWakeLock] = useState(null);
 
     useEffect(() => {
         // console.log("PoisView::UseEffect for axios.get called")
@@ -147,7 +149,7 @@ function PoisView() {
     useEffect(() => {
         if (follow_me) {
             // console.log("useEffect4 was called");
-            var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
+            //var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
 
             let new_position_obj = L.latLng(new_position.lat, new_position.lng);
 
@@ -155,6 +157,7 @@ function PoisView() {
 
             // to have less zoom in specific speed decrease (num - zoom) 
             // also the bigger the difference between the two nums - the less the zoom will osilate
+		/*
             let upper_distance_threshold = Math.pow(2, (24 - zoom));
             let lower_distance_threshold = Math.pow(2, (22 - zoom));
             let new_zoom = 18;
@@ -170,7 +173,7 @@ function PoisView() {
                 // lower_distance_threshold + " setting zoom to " + new_zoom);
                 setZoom(new_zoom);
             }
-
+*/
             if (new_position.lat >= the_map.leafletElement.getBounds()._northEast.lat ||
                 new_position.lng >= the_map.leafletElement.getBounds()._northEast.lng ||
                 new_position.lat <= the_map.leafletElement.getBounds()._southWest.lat ||
@@ -180,6 +183,8 @@ function PoisView() {
             }
             setPersonCurrentLocation(new_position_obj);
 
+            if(recordMovement)
+            {
                 console.log("adding : " + new_position_obj);
                 if (positionsHistory.length === 0)
                     setPositionsHistory([new_position_obj]);
@@ -187,6 +192,7 @@ function PoisView() {
                     setPositionsHistory([new_position_obj, new_position_obj]);
                 else
                     setPositionsHistory([...positionsHistory, new_position_obj]);		
+	    }    
         }
         else {
             // console.log("follow me was false, so I did nothing");
@@ -282,7 +288,18 @@ function PoisView() {
     }
 
 
+    function toggleRecordingMovement() {
+        let rec_move = recordMovement;
+        setRecordMovement(!recordMovement);
 
+        if (rec_move)
+            releaseWakeLock();
+        else {
+            setPositionsHistory([]);
+            requestWakeLock();
+        }
+
+    }
 
     // This CB is called on onViewportChanged event, when user drags the map with the mouse
     const showNewViewportDetails = (e) => {
@@ -354,6 +371,35 @@ function PoisView() {
     }
 
 
+
+    // Function that attempts to request a wake lock.
+    const requestWakeLock = async () => {
+        try {
+            let wl = await navigator.wakeLock.request('screen');
+            setWakeLock(wl);
+            wl.addEventListener('release', () => {
+                console.log('Wake Lock was released');
+            });
+            console.log('Wake Lock is active');
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    };
+
+
+    // Function that attempts to release the wake lock.
+    const releaseWakeLock = async () => {
+        if (!wakeLock) {
+            return;
+        }
+        try {
+            await wakeLock.release();
+            setWakeLock(null);
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    };
+
     return (
         // same like : https://{s}.tile.osm.org/{z}/{x}/{y}.png
 
@@ -400,6 +446,14 @@ function PoisView() {
                 >
                     Refresh
             </button>
+            </Control>
+            <Control position="topleft">
+                <button style={{ zIndex: "100", color: recordMovement ? "green" : "red" }}
+                    // className="badge badge-primary mr-2"
+                    onClick={() => toggleRecordingMovement()}
+                >
+                    {recordMovement ? "Stop Recording" : "Record Movement"}
+                </button>
             </Control>
             <Control position="topright">
                 <GeoapifyContext apiKey={process.env.REACT_APP_GEOAPIFY_MAPS_API_KEY} 

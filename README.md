@@ -16,3 +16,6 @@ it does:
 uses polyline to record movement 
 using async await for MarkersByUrl
 changes zoom level automaticaly based on speed of movement
+
+V3.2 is like V3.1 except for: 
+It does not changes zoom level based on speed of movement
