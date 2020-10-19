@@ -1,0 +1,94 @@
+{
+    "pois": [
+        {
+            "description": "A rattle snake ",
+            "name": "Amnon",
+            "geometry": [
+                31.800772,
+                35.072764
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A dear",
+            "name": "Lior",
+            "geometry": [
+                31.827025,
+                35.046139
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A blue bird",
+            "name": "Lisa",
+            "geometry": [
+                31.786319,
+                35.021437
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A sparrow",
+            "name": "Amnon",
+            "geometry": [
+                31.835069,
+                35.052312
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A blue lizard",
+            "name": "Lior",
+            "geometry": [
+                31.793039,
+                35.087248
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A naked woman",
+            "name": "Amnon",
+            "geometry": [
+                31.810507,
+                35.02022
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A wild horse",
+            "name": "Timnah",
+            "geometry": [
+                31.822437,
+                35.009063
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A wild donkey",
+            "name": "Naama",
+            "geometry": [
+                31.805188,
+                35.048437
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A haeena",
+            "name": "Timnah",
+            "geometry": [
+                31.800938,
+                35.021438
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        },
+        {
+            "description": "A scorpion",
+            "name": "Lisa",
+            "geometry": [
+                31.812187,
+                35.025563
+            ],
+            "createdAt": "2020-08-05T10:00:13.250+00:00"
+        }
+    ]
+}
