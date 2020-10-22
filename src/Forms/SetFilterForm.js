@@ -1,12 +1,26 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Form } from 'react-bootstrap';
 import GetFilterValuesForm from '../Forms/GetFilterValuesForm';
 
+import { CheckedListContext ,
+    EnteredListContext, 
+    FilterByListContext, 
+    SetRefreshWatchdogContext, 
+    SetMyFormContext, 
+    ResetFiltersAndSelectionsContext
+ } from "../components/PoisView";
+
+ 
 function SetFilterForm(props) {
 
-    const {checked_list, entered_list, filterBy_list, 
-        setRefreshWatchdog, setMyForm, addNewMarker, resetFiltersAndSelections} = props;
+    const checked_list = useContext(CheckedListContext);
+    const entered_list = useContext(EnteredListContext);
+    const filterBy_list = useContext(FilterByListContext);
+    const setRefreshWatchdog = useContext(SetRefreshWatchdogContext);
+    const setMyForm = useContext(SetMyFormContext);
+    const resetFiltersAndSelections = useContext(ResetFiltersAndSelectionsContext);
 
+        
     function filterSetSubmit() {
         // console.log("name: " + name_checked);
         // console.log("radius: " + radius_checked);
@@ -40,13 +54,19 @@ function SetFilterForm(props) {
 
     function getFilterValuesForm() {
         let content =
-            <GetFilterValuesForm setMyForm={(content) => { setMyForm(content) }}
-                setRefreshWatchdog={(current_time) => { setRefreshWatchdog(current_time) }}
-                resetFiltersAndSelections={() => { resetFiltersAndSelections() }}
-                checked_list={checked_list}
-                entered_list={entered_list}
-                filterBy_list={filterBy_list}>
-            </GetFilterValuesForm>
+            <CheckedListContext.Provider value={checked_list}>
+                <EnteredListContext.Provider value={entered_list}>
+                    <FilterByListContext.Provider value={filterBy_list}>
+                        <SetRefreshWatchdogContext.Provider value={setRefreshWatchdog}>
+                            <SetMyFormContext.Provider value={setMyForm}>
+                                <ResetFiltersAndSelectionsContext.Provider value={resetFiltersAndSelections}>
+                                    <GetFilterValuesForm></GetFilterValuesForm>
+                                </ResetFiltersAndSelectionsContext.Provider>
+                            </SetMyFormContext.Provider>
+                        </SetRefreshWatchdogContext.Provider>
+                    </FilterByListContext.Provider>
+                </EnteredListContext.Provider>
+            </CheckedListContext.Provider>
 
         setMyForm(content);
     }

@@ -47,7 +47,7 @@ function MarkersByUrl() {
 
     const { name } = useParams();
 
-    const url = `${process.env.REACT_APP_BE_DB_SERVER_ADDRESS}:${process.env.REACT_APP_BE_DB_SERVER_PORT}/api/pois`;
+    const url = `http://${process.env.REACT_APP_BE_DB_SERVER_ADDRESS}:${process.env.REACT_APP_BE_DB_SERVER_PORT}/api/pois`;
 
     const [startingPoint, setStartingPoint] = useState(L.latLng(31.896, 35.012));
     const [mapCenter, setMapCenter] = useState(L.latLng(31.896, 35.012));
@@ -61,18 +61,34 @@ function MarkersByUrl() {
 
     const [new_position, setMapPosition] = useState(L.latLng(31.896, 35.012));
 
+    // useEffect(() => {
+    //     axios.get(url)
+    //         .then(response => {
+    //             if (response.error) {
+    //                 console.log("There was an error please refresh or try again later")
+    //             }
+    //             else {
+    //                 setPoisList(response.data);
+    //             }
+    //         })
+    //         .catch(() => {
+    //         })
+    // }, [url]);
+
+    // Implementing the lase useEffect with async/await
+    async function getTargetMarker () {
+        let response = await axios.get(url);
+
+        if (response.error) {
+            console.log("There was an error please refresh or try again later")
+        }
+        else {
+            setPoisList(response.data);
+        }
+    }
+
     useEffect(() => {
-        axios.get(url)
-            .then(response => {
-                if (response.error) {
-                    console.log("There was an error please refresh or try again later")
-                }
-                else {
-                    setPoisList(response.data);
-                }
-            })
-            .catch(() => {
-            })
+        getTargetMarker();
     }, [url]);
 
     useEffect(() => {
@@ -164,12 +180,13 @@ function MarkersByUrl() {
             // console.log("starting point set to: " + s_point);
         }
         else
-            setTimeout(alertTimer, 1000);
+            // setTimeout(alertTimer, 1000);
+            alert("Could not find any marker named: " + name + " in the FindMe category");
     }
 
-    function alertTimer() {
-        alert("Could not find any marker named: " + name + " in the FindMe category");
-    }
+    // function alertTimer() {
+    //     alert("Could not find any marker named: " + name + " in the FindMe category");
+    // }
 
 
     function distance(lat1, lon1, lat2, lon2, unit) {
@@ -193,7 +210,6 @@ function MarkersByUrl() {
             return dist;
         }
     }
-
 
     return (
 

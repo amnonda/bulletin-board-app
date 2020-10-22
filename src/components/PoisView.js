@@ -65,18 +65,28 @@ const categories = {
 
 var watch_options = {
     enableHighAccuracy: true,
-    maximumAge: 0,
+    maximumAge: 60000,
     timeout: 45000
 };
 
+const CheckedListContext = React.createContext(checked_list);
+const EnteredListContext = React.createContext(entered_list);
+const FilterByListContext = React.createContext(filterBy_list);
+const SetRefreshWatchdogContext = React.createContext(null);
+const SetMyFormContext = React.createContext(null);
+const AddNewMarkerContext = React.createContext(null);
+const ResetFiltersAndSelectionsContext = React.createContext(null);
+
+// The wake lock sentinel.
+// let wakeLock = null;
 
 function PoisView() {
-     console.log("PoisView: started ");
+    // console.log("PoisView: started ");
 
-    const url = `${process.env.REACT_APP_BE_DB_SERVER_ADDRESS}:${process.env.REACT_APP_BE_DB_SERVER_PORT}/api/pois`;
+    const url = `http://${process.env.REACT_APP_BE_DB_SERVER_ADDRESS}:${process.env.REACT_APP_BE_DB_SERVER_PORT}/api/pois`;
 //L.latLng(31.896, 35.012)
     const [mapCurrentLocation, setMapCurrentLocation] = useState(L.latLng(0,0));
-    const [personCurrentLocation, setPersonCurrentLocation] = useState(L.latLng(0,0));
+    const [personCurrentLocation, setPersonCurrentLocation] = useState(0,0);
     const [zoom, setZoom] = useState(18);
     const [marker, setMarker] = useState(null);
 
@@ -86,6 +96,7 @@ function PoisView() {
 
     const [positionsHistory, setPositionsHistory] = useState([]);
 
+
     // Enable this to get the app returns to current location automaticaly
     const [follow_me, setFollowMe] = useState(true);
     const [refreshWatchdog, setRefreshWatchdog] = useState(0);
@@ -94,6 +105,7 @@ function PoisView() {
     const [recordMovement, setRecordMovement] = useState(false);
     // The wake lock sentinel.
     const [wakeLock, setWakeLock] = useState(null);
+
 
     useEffect(() => {
         // console.log("PoisView::UseEffect for axios.get called")
@@ -118,9 +130,30 @@ function PoisView() {
         // }
     }, [url, refreshWatchdog]);
 
+    // if we want to implement the last useEffect with async/await, we
+    // will need to replace it with the following:
+    // Implementing the lase useEffect with async/await
+    // async function getTargetMarker() {
+    //     let response = await axios.get(url);
+
+    //     if (response.error) {
+    //         console.log("There was an error please refresh or try again later")
+    //     }
+    //     else {
+    //         setPoisList(response.data);
+    //     }
+    // }
+
+    // useEffect(() => {
+    //     getTargetMarker();
+    // }, [url, refreshWatchdog]);
+
+
+
+
 
     useEffect(() => {
-         console.log("useEffect2 was called");
+        // console.log("useEffect2 was called");
 
         navigator.geolocation.watchPosition(function (position) {
             // console.log("calling handleNewPosition");
@@ -149,7 +182,7 @@ function PoisView() {
     useEffect(() => {
         if (follow_me) {
             // console.log("useEffect4 was called");
-            //var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
+            var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
 
             let new_position_obj = L.latLng(new_position.lat, new_position.lng);
 
@@ -157,7 +190,6 @@ function PoisView() {
 
             // to have less zoom in specific speed decrease (num - zoom) 
             // also the bigger the difference between the two nums - the less the zoom will osilate
-		/*
             let upper_distance_threshold = Math.pow(2, (24 - zoom));
             let lower_distance_threshold = Math.pow(2, (22 - zoom));
             let new_zoom = 18;
@@ -173,7 +205,7 @@ function PoisView() {
                 // lower_distance_threshold + " setting zoom to " + new_zoom);
                 setZoom(new_zoom);
             }
-*/
+
             if (new_position.lat >= the_map.leafletElement.getBounds()._northEast.lat ||
                 new_position.lng >= the_map.leafletElement.getBounds()._northEast.lng ||
                 new_position.lat <= the_map.leafletElement.getBounds()._southWest.lat ||
@@ -185,14 +217,14 @@ function PoisView() {
 
             if(recordMovement)
             {
-                console.log("adding : " + new_position_obj);
+                // console.log("adding : " + new_position_obj);
                 if (positionsHistory.length === 0)
                     setPositionsHistory([new_position_obj]);
                 else if (positionsHistory.length === 1)
                     setPositionsHistory([new_position_obj, new_position_obj]);
                 else
-                    setPositionsHistory([...positionsHistory, new_position_obj]);		
-	    }    
+                    setPositionsHistory([...positionsHistory, new_position_obj]);
+            }
         }
         else {
             // console.log("follow me was false, so I did nothing");
@@ -287,7 +319,6 @@ function PoisView() {
         setRefreshWatchdog(current_time);
     }
 
-
     function toggleRecordingMovement() {
         let rec_move = recordMovement;
         setRecordMovement(!recordMovement);
@@ -298,7 +329,15 @@ function PoisView() {
             setPositionsHistory([]);
             requestWakeLock();
         }
+    }
 
+    function toggleScreenLock() {
+        if (!wakeLock) {
+            requestWakeLock();
+        }
+        else {
+            releaseWakeLock();
+        }
     }
 
     // This CB is called on onViewportChanged event, when user drags the map with the mouse
@@ -328,11 +367,16 @@ function PoisView() {
     const addNewMarkerInLocationForm = (e) => {
         marker_location_determined = e.latlng;
         let content =
-            <AddNewMarkerInLocationForm entered_list={entered_list}
-                setMyForm={(content) => { setMyForm(content) }}
-                addNewMarker={(name, desc, category, use_determined_location) => { addNewMarker(name, desc, category, use_determined_location) }} >
-            </AddNewMarkerInLocationForm>
-
+            <SetMyFormContext.Provider value={setMyForm}>
+                <AddNewMarkerContext.Provider value={addNewMarker}>
+                    <EnteredListContext.Provider value={entered_list}>
+                        <AddNewMarkerInLocationForm entered_list={entered_list}
+                            setMyForm={(content) => { setMyForm(content) }}
+                            addNewMarker={(name, desc, category, use_determined_location) => { addNewMarker(name, desc, category, use_determined_location) }} >
+                        </AddNewMarkerInLocationForm>
+                    </EnteredListContext.Provider>
+                </AddNewMarkerContext.Provider>
+            </SetMyFormContext.Provider>
         setMyForm(content);
     }
 
@@ -378,6 +422,7 @@ function PoisView() {
             let wl = await navigator.wakeLock.request('screen');
             setWakeLock(wl);
             wl.addEventListener('release', () => {
+                setWakeLock(null);
                 console.log('Wake Lock was released');
             });
             console.log('Wake Lock is active');
@@ -390,16 +435,34 @@ function PoisView() {
     // Function that attempts to release the wake lock.
     const releaseWakeLock = async () => {
         if (!wakeLock) {
+            console.log('There is no Wake Lock');
             return;
         }
         try {
+            console.log('releasing Wake Lock in progress');
             await wakeLock.release();
+            console.log('releasing Wake Lock  progress completed');
             setWakeLock(null);
         } catch (err) {
             console.error(`${err.name}, ${err.message}`);
         }
     };
 
+    // const staticPositions1 = [ [ 31.928998227020065, 35.012678524962217 ], 
+    // [ 31.928848674763591, 35.0126287881665 ], 
+    // [ 31.928629964583797, 35.012638464250044 ], 
+    // [ 31.928422760198293, 35.012663918176946 ], 
+    // [ 31.928149062199842, 35.012715488835601 ] ];
+
+    // function addToPositionsHistory(new_pos) {
+    //     console.log("adding : " + new_pos);
+    //     positionsHistory = [
+    //         ...positionsHistory,
+    //         {
+    //             new_pos
+    //         },
+    //     ]
+    // }
     return (
         // same like : https://{s}.tile.osm.org/{z}/{x}/{y}.png
 
@@ -436,7 +499,7 @@ function PoisView() {
                     // className="badge badge-primary mr-2"
                     onClick={() => toggleFollowMe()}
                 >
-                    {follow_me ? "Tracking..." : "Track Movement"}
+                    {follow_me ? "Tracking is On" : "Tracking is Off"}
                 </button>
             </Control>
             <Control position="topleft">
@@ -452,7 +515,15 @@ function PoisView() {
                     // className="badge badge-primary mr-2"
                     onClick={() => toggleRecordingMovement()}
                 >
-                    {recordMovement ? "Stop Recording" : "Record Movement"}
+                    {recordMovement ? "Recording is On" : "Recording is Off"}
+                </button>
+            </Control>
+            <Control position="topleft">
+                <button style={{ zIndex: "100", color: wakeLock ? "green" : "red" }}
+                    // className="badge badge-primary mr-2"
+                    onClick={() => toggleScreenLock()}
+                >
+                    {wakeLock ? "Screen Lock is On" : "Screen Lock is Off"}
                 </button>
             </Control>
             <Control position="topright">
@@ -467,16 +538,29 @@ function PoisView() {
                 </GeoapifyContext>
             </Control>
             <Control position="topright">
-                <Menu
-                    checked_list={checked_list}
-                    entered_list={entered_list}
-                    filterBy_list={filterBy_list}
-                    setRefreshWatchdog={(current_time) => { setRefreshWatchdog(current_time) }}
-                    setMyForm={(content) => { setMyForm(content) }}
-                    addNewMarker={(name, desc, category, use_determined_location) => 
-                        { addNewMarker(name, desc, category, use_determined_location) }}
-                    resetFiltersAndSelections={() => { resetFiltersAndSelections() }}>
-                </Menu>
+                <CheckedListContext.Provider value={checked_list}>
+                    <EnteredListContext.Provider value={entered_list}>
+                        <FilterByListContext.Provider value={filterBy_list}>
+                            <SetRefreshWatchdogContext.Provider value={setRefreshWatchdog}>
+                                <SetMyFormContext.Provider value={setMyForm}>
+                                    <AddNewMarkerContext.Provider value={addNewMarker}>
+                                        <ResetFiltersAndSelectionsContext.Provider value={resetFiltersAndSelections}>
+                                            <Menu
+                                                checked_list={checked_list}
+                                                entered_list={entered_list}
+                                                filterBy_list={filterBy_list}
+                                                setRefreshWatchdog={(current_time) => { setRefreshWatchdog(current_time) }}
+                                                setMyForm={(content) => { setMyForm(content) }}
+                                                addNewMarker={(name, desc, category, use_determined_location) => { addNewMarker(name, desc, category, use_determined_location) }}
+                                                resetFiltersAndSelections={() => { resetFiltersAndSelections() }}>
+                                            </Menu>
+                                        </ResetFiltersAndSelectionsContext.Provider>
+                                    </AddNewMarkerContext.Provider>
+                                </SetMyFormContext.Provider>
+                            </SetRefreshWatchdogContext.Provider>
+                        </FilterByListContext.Provider>
+                    </EnteredListContext.Provider>
+                </CheckedListContext.Provider>
             </Control>
 
             <Control position="topright">
@@ -503,4 +587,12 @@ function PoisView() {
     );
 }
 
-export default PoisView;
+export {
+    PoisView, CheckedListContext,
+    EnteredListContext,
+    FilterByListContext,
+    SetRefreshWatchdogContext,
+    SetMyFormContext,
+    AddNewMarkerContext,
+    ResetFiltersAndSelectionsContext
+};
