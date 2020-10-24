@@ -77,8 +77,8 @@ const SetMyFormContext = React.createContext(null);
 const AddNewMarkerContext = React.createContext(null);
 const ResetFiltersAndSelectionsContext = React.createContext(null);
 
-// The wake lock sentinel.
-// let wakeLock = null;
+var start_time = null;
+var end_time = null;
 
 function PoisView() {
     // console.log("PoisView: started ");
@@ -105,6 +105,7 @@ function PoisView() {
     const [recordMovement, setRecordMovement] = useState(false);
     // The wake lock sentinel.
     const [wakeLock, setWakeLock] = useState(null);
+    const [distancePassed, setDistancePassed] = useState(0);
 
 
     useEffect(() => {
@@ -190,8 +191,8 @@ function PoisView() {
 
             // to have less zoom in specific speed decrease (num - zoom) 
             // also the bigger the difference between the two nums - the less the zoom will osilate
-            let upper_distance_threshold = Math.pow(2, (24 - zoom));
-            let lower_distance_threshold = Math.pow(2, (22 - zoom));
+            let upper_distance_threshold = Math.pow(2, (21 - zoom));
+            let lower_distance_threshold = Math.pow(2, (19 - zoom));
             let new_zoom = 18;
             if (d >= upper_distance_threshold) {
                 new_zoom = Math.max(0, (zoom - 1));
@@ -222,8 +223,10 @@ function PoisView() {
                     setPositionsHistory([new_position_obj]);
                 else if (positionsHistory.length === 1)
                     setPositionsHistory([new_position_obj, new_position_obj]);
-                else
+                else {
                     setPositionsHistory([...positionsHistory, new_position_obj]);
+                    setDistancePassed(distancePassed+Math.floor(d));
+                }
             }
         }
         else {
@@ -323,11 +326,24 @@ function PoisView() {
         let rec_move = recordMovement;
         setRecordMovement(!recordMovement);
 
-        if (rec_move)
+        if (rec_move){
             releaseWakeLock();
+            end_time = new Date();
+            var time_ellapsed = (end_time - start_time) / 60000;
+            var av_sp = distancePassed/1000/time_ellapsed*60;
+            console.log(start_time);
+            console.log(end_time);
+            console.log(time_ellapsed + "minutes");
+            console.log(distancePassed/1000/time_ellapsed/60 + " kms")
+            alert("Distance Passed: " + distancePassed + " meters\n" +
+            "Time Ellapsed: " + Math.floor(time_ellapsed) + " minutes\n" +
+            "Average Speed: " + av_sp.toFixed(2) + " Kms/h");
+        }
         else {
+            start_time = new Date();
             setPositionsHistory([]);
             requestWakeLock();
+            setDistancePassed(0);
         }
     }
 
@@ -525,6 +541,10 @@ function PoisView() {
                 >
                     {wakeLock ? "Screen Lock is On" : "Screen Lock is Off"}
                 </button>
+            </Control>
+            <Control position="topleft">
+                <p style={{ zIndex: "100", color: "blue"}}> Distance Passed: {distancePassed} meters</p>
+                <p style={{ zIndex: "100", color: "blue"}}> Zoom level: {zoom} </p>
             </Control>
             <Control position="topright">
                 <GeoapifyContext apiKey={process.env.REACT_APP_GEOAPIFY_MAPS_API_KEY} 
