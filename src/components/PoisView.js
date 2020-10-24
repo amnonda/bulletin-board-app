@@ -20,6 +20,7 @@ import Menu from './Menu';
 import AddNewMarkerInLocationForm from '../Forms/AddNewMarkerInLocationForm';
 import { isWithinBounds, distance } from '../Utilities/HelperFunctions';
 import './PoisView.css';
+import { useCookies } from "react-cookie";
 
 let the_map = null;
 // this array must be here outside the PoisView function
@@ -80,6 +81,7 @@ const ResetFiltersAndSelectionsContext = React.createContext(null);
 var start_time = null;
 var end_time = null;
 
+
 function PoisView() {
     // console.log("PoisView: started ");
 
@@ -106,9 +108,8 @@ function PoisView() {
     // The wake lock sentinel.
     const [wakeLock, setWakeLock] = useState(null);
     const [distancePassed, setDistancePassed] = useState(0);
-    const [lastRecordedDistance, setLastRecordedDistance] = useState(0);
-    const [lastGpsInputTime, setlastGpsInputTime] = useState(new Date());
 
+    const [cookies, setCookie, removeCookie] = useCookies(["LastRecording", "StartTime", "DistancePassed"]);
 
     useEffect(() => {
         // console.log("PoisView::UseEffect for axios.get called")
@@ -186,36 +187,6 @@ function PoisView() {
         if (follow_me) {
             // console.log("useEffect4 was called");
             var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
-            var new_gps_input_time = new Date();
-            var seconds_between_two_gps_inputs = (new_gps_input_time - lastGpsInputTime) / 1000;
-            // console.log("seconds_between_two_gps_inputs " + seconds_between_two_gps_inputs);
-            setlastGpsInputTime(new Date());
-
-            if(lastMapLocation !== L.latLng(0,0) && 
-            new_position !== L.latLng(0,0) && 
-            lastRecordedDistance !== 0) {
-                // console.log("ready for check");
-                if (d > 3 * lastRecordedDistance) {
-                    console.log("found large distance: " + d);
-                    if(seconds_between_two_gps_inputs < 2) {
-                        console.log("within: " + seconds_between_two_gps_inputs + " secs." + " prev dis was: " + lastRecordedDistance);
-                        setLastRecordedDistance(d);
-                        return;
-                    }
-                    else {
-                        console.log("but time seems OK...");
-                    }
-                }
-                else {
-                    console.log("but distance seems OK...");
-                }
-            }
-            else {
-                console.log("not ready for check yet...");
-            }
-
-            console.log("continuing with distance: " + d);
-            setLastRecordedDistance(d);
 
             let new_position_obj = L.latLng(new_position.lat, new_position.lng);
 
@@ -253,12 +224,20 @@ function PoisView() {
                 // console.log("adding : " + new_position_obj);
                 if (positionsHistory.length === 0)
                     setPositionsHistory([new_position_obj]);
-                else if (positionsHistory.length === 1)
+                else if (positionsHistory.length === 1) {
                     setPositionsHistory([new_position_obj, new_position_obj]);
+                    // this saves the first two geo-points in the cookie
+                    setCookie("LastRecording", [new_position_obj, new_position_obj]);
+                }
                 else {
                     setPositionsHistory([...positionsHistory, new_position_obj]);
-                    setDistancePassed(distancePassed+Math.floor(d));
-                    // setLastRecordedDistance(d);
+                    // to save all recprding, but remember it is limited to 4096 bytes
+                    // setCookie("LastRecording", [...positionsHistory, new_position_obj]);
+                    if (d <= 10000) {// to avoid calculating distance from [0,0]
+                        let total_distance = distancePassed + Math.floor(d);
+                        setDistancePassed(total_distance);
+                        setCookie("DistancePassed", total_distance);
+                    }
                 }
             }
         }
@@ -268,6 +247,28 @@ function PoisView() {
 
     }, [new_position]);
 
+
+    useEffect(() => {
+        // console.log("in useEffect for cookie")
+        if (cookies.LastRecording) {
+            // console.log("Found a previous recording");
+            // const prompt_message = prompt('found a cookie, do you want to use it?');
+            if (window.confirm('Found a previous recording, do you want to use it?')) {
+                // console.log("you said yes");
+                setPositionsHistory(cookies.LastRecording);
+                start_time = new Date(cookies.StartTime);
+                setDistancePassed(Number(cookies.DistancePassed));
+                setRecordMovement(true);
+                requestWakeLock();
+                // console.log(start_time);
+                // console.log(distancePassed);
+            }
+        }
+        // else {
+        //     console.log("No previous recording found");
+        //     alert("No previous recording found");
+        // }
+    }, []);
 
     function setPoisList(pois_list) {
         // console.log("name: " + name_checked);
@@ -362,22 +363,29 @@ function PoisView() {
         if (rec_move){
             releaseWakeLock();
             end_time = new Date();
-            var time_elapsed = (end_time - start_time) / 60000;
-            var av_sp = distancePassed/1000/time_elapsed*60;
-            console.log(start_time);
-            console.log(end_time);
-            console.log(time_elapsed + "minutes");
-            console.log(distancePassed/1000/time_elapsed/60 + " kms")
+            var time_ellapsed = (end_time - start_time) / 60000;
+            var av_sp = distancePassed/1000/time_ellapsed*60;
+
+            // console.log(time_ellapsed + "minutes");
+            // console.log(distancePassed/1000/time_ellapsed/60 + " kms")
             alert("Distance Passed: " + distancePassed + " meters\n" +
-            "Time elapsed: " + Math.floor(time_elapsed) + " minutes\n" +
+            "Time Ellapsed: " + Math.floor(time_ellapsed) + " minutes\n" +
             "Average Speed: " + av_sp.toFixed(2) + " Kms/h");
+            removeCookie("LastRecording");
+            removeCookie("StartTime");
+            removeCookie("DistancePassed");
+
         }
         else {
             start_time = new Date();
             setPositionsHistory([]);
+            setCookie("LastRecording", []);
+            setCookie("StartTime", start_time);
+            setCookie("DistancePassed", 0);
+
+
             requestWakeLock();
             setDistancePassed(0);
-            // setLastRecordedDistance(0);
         }
     }
 
@@ -473,9 +481,9 @@ function PoisView() {
             setWakeLock(wl);
             wl.addEventListener('release', () => {
                 setWakeLock(null);
-                console.log('Wake Lock was released');
+                // console.log('Wake Lock was released');
             });
-            console.log('Wake Lock is active');
+            // console.log('Wake Lock is active');
         } catch (err) {
             console.error(`${err.name}, ${err.message}`);
         }
@@ -485,13 +493,13 @@ function PoisView() {
     // Function that attempts to release the wake lock.
     const releaseWakeLock = async () => {
         if (!wakeLock) {
-            console.log('There is no Wake Lock');
+            // console.log('There is no Wake Lock');
             return;
         }
         try {
-            console.log('releasing Wake Lock in progress');
+            // console.log('releasing Wake Lock in progress');
             await wakeLock.release();
-            console.log('releasing Wake Lock  progress completed');
+            // console.log('releasing Wake Lock  progress completed');
             setWakeLock(null);
         } catch (err) {
             console.error(`${err.name}, ${err.message}`);
@@ -513,6 +521,7 @@ function PoisView() {
     //         },
     //     ]
     // }
+
     return (
         // same like : https://{s}.tile.osm.org/{z}/{x}/{y}.png
 
