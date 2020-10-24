@@ -106,6 +106,8 @@ function PoisView() {
     // The wake lock sentinel.
     const [wakeLock, setWakeLock] = useState(null);
     const [distancePassed, setDistancePassed] = useState(0);
+    const [lastRecordedDistance, setLastRecordedDistance] = useState(0);
+    const [lastGpsInputTime, setlastGpsInputTime] = useState(new Date());
 
 
     useEffect(() => {
@@ -184,6 +186,36 @@ function PoisView() {
         if (follow_me) {
             // console.log("useEffect4 was called");
             var d = 1000 * distance(lastMapLocation.lat, lastMapLocation.lng, new_position.lat, new_position.lng, 'K');
+            var new_gps_input_time = new Date();
+            var seconds_between_two_gps_inputs = (new_gps_input_time - lastGpsInputTime) / 1000;
+            // console.log("seconds_between_two_gps_inputs " + seconds_between_two_gps_inputs);
+            setlastGpsInputTime(new Date());
+
+            if(lastMapLocation !== L.latLng(0,0) && 
+            new_position !== L.latLng(0,0) && 
+            lastRecordedDistance !== 0) {
+                // console.log("ready for check");
+                if (d > 3 * lastRecordedDistance) {
+                    console.log("found large distance: " + d);
+                    if(seconds_between_two_gps_inputs < 2) {
+                        console.log("within: " + seconds_between_two_gps_inputs + " secs." + " prev dis was: " + lastRecordedDistance);
+                        setLastRecordedDistance(d);
+                        return;
+                    }
+                    else {
+                        console.log("but time seems OK...");
+                    }
+                }
+                else {
+                    console.log("but distance seems OK...");
+                }
+            }
+            else {
+                console.log("not ready for check yet...");
+            }
+
+            console.log("continuing with distance: " + d);
+            setLastRecordedDistance(d);
 
             let new_position_obj = L.latLng(new_position.lat, new_position.lng);
 
@@ -226,6 +258,7 @@ function PoisView() {
                 else {
                     setPositionsHistory([...positionsHistory, new_position_obj]);
                     setDistancePassed(distancePassed+Math.floor(d));
+                    // setLastRecordedDistance(d);
                 }
             }
         }
@@ -329,14 +362,14 @@ function PoisView() {
         if (rec_move){
             releaseWakeLock();
             end_time = new Date();
-            var time_ellapsed = (end_time - start_time) / 60000;
-            var av_sp = distancePassed/1000/time_ellapsed*60;
+            var time_elapsed = (end_time - start_time) / 60000;
+            var av_sp = distancePassed/1000/time_elapsed*60;
             console.log(start_time);
             console.log(end_time);
-            console.log(time_ellapsed + "minutes");
-            console.log(distancePassed/1000/time_ellapsed/60 + " kms")
+            console.log(time_elapsed + "minutes");
+            console.log(distancePassed/1000/time_elapsed/60 + " kms")
             alert("Distance Passed: " + distancePassed + " meters\n" +
-            "Time Ellapsed: " + Math.floor(time_ellapsed) + " minutes\n" +
+            "Time elapsed: " + Math.floor(time_elapsed) + " minutes\n" +
             "Average Speed: " + av_sp.toFixed(2) + " Kms/h");
         }
         else {
@@ -344,6 +377,7 @@ function PoisView() {
             setPositionsHistory([]);
             requestWakeLock();
             setDistancePassed(0);
+            // setLastRecordedDistance(0);
         }
     }
 
