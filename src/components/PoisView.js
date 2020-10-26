@@ -262,6 +262,7 @@ const [cookies, setCookie, removeCookie] = useCookies(["LastRecording", "StartTi
                 }
                 else {
                     setPositionsHistory([...positionsHistory, new_position_obj]);
+
                     // to save all recording, but remember it is limited to 4096 bytes
                     // setCookie("LastRecording", [...positionsHistory, new_position_obj]);
                     if(positionsHistory.length % 10 === 0) {
@@ -271,6 +272,7 @@ const [cookies, setCookie, removeCookie] = useCookies(["LastRecording", "StartTi
                         console.log("copied array from " + Math.max(positionsHistory.length - 50, 0) +
                         " to " + positionsHistory.length);
                     }
+
                     if (d <= 10000) {// to avoid calculating distance from [0,0]
                         let total_distance = distancePassed + Math.floor(d);
                         setDistancePassed(total_distance);
